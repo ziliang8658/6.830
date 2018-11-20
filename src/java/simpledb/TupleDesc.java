@@ -59,12 +59,9 @@ public class TupleDesc implements Serializable {
      *            array specifying the names of the fields. Note that names may
      *            be null.
      */
-    public TupleDesc(Type[] typeAr, String[] fieldAr) throws ParsingException {
+    public TupleDesc(Type[] typeAr, String[] fieldAr)  {
     	fields=new ArrayList<TDItem>();
     	fieldsNameIndexMap=new HashMap<String,Integer>();
-    	if(typeAr.length!=fieldAr.length) {
-    		throw new ParsingException("the lenth of the typeArray is uneuqal to the fieldArray");
-    	}
        for(int i=0;i!=typeAr.length;i++) {
     	   TDItem field=new TDItem(typeAr[i],fieldAr[i]);
     	   fields.add(field);
@@ -81,7 +78,18 @@ public class TupleDesc implements Serializable {
      *            TupleDesc. It must contain at least one entry.
      */
     public TupleDesc(Type[] typeAr) {
-        // some code goes here
+    	String[] names=new String[typeAr.length];
+    	for(int i=0;i!=typeAr.length;i++) {
+    		names[i]=i+"th row";
+    	}
+    	fields=new ArrayList<TDItem>();
+    	fieldsNameIndexMap=new HashMap<String,Integer>();
+       for(int i=0;i!=typeAr.length;i++) {
+    	   TDItem field=new TDItem(typeAr[i],names[i]);
+    	   fields.add(field);
+    	   fieldsNameIndexMap.put(names[i], i);
+       }
+    	
     }
 
     /**
@@ -89,7 +97,7 @@ public class TupleDesc implements Serializable {
      */
     public int numFields() {
         // some code goes here
-        return 0;
+       return fields.size();
     }
 
     /**
@@ -130,7 +138,14 @@ public class TupleDesc implements Serializable {
      *             if no field with a matching name is found.
      */
     public int fieldNameToIndex(String name) throws NoSuchElementException {
-    	return fieldsNameIndexMap.get(name);
+    	Integer index=fieldsNameIndexMap.get(name);
+    	
+    	if(index==null) {
+    		throw new NoSuchElementException("Not a valid name");
+    	}
+    	
+    	return index;
+    	
     }
 
     /**
@@ -156,7 +171,17 @@ public class TupleDesc implements Serializable {
      * @return the new TupleDesc
      */
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
-        
+        Type [] mergedFieldTypes= new Type[td1.fields.size()+td2.fields.size()];
+        String[] mergedFiledNames= new String[td1.fields.size()+td2.fields.size()];
+        for(int i=0;i!=td1.fields.size();i++) {
+        	mergedFieldTypes[i]=td1.getFieldType(i);
+        	mergedFiledNames[i]=td1.getFieldName(i);
+        }
+        for(int j=0;j!=td2.fields.size();j++) {
+        	mergedFieldTypes[j+td1.fields.size()]=td2.getFieldType(j);
+        	mergedFiledNames[j+td1.fields.size()]=td2.getFieldName(j);
+        }
+        return new TupleDesc(mergedFieldTypes,mergedFiledNames);
     }
 
     /**
@@ -171,9 +196,23 @@ public class TupleDesc implements Serializable {
      */
 
     public boolean equals(Object o) {
-        // some code goes here
-        return false;
+    	if(o instanceof TupleDesc) {
+    		TupleDesc comparedTupleDesc=(TupleDesc)o;
+    		if(comparedTupleDesc.fields.size()!=this.fields.size()) {
+        	return false;
+    		}
+    		for(int i=0;i!=this.fields.size();i++) {
+    			if(comparedTupleDesc.getFieldType(i)!=this.getFieldType(i)){
+        		return false;
+    			}
+    		}
+    		return true;
+    	}
+    	else {
+    		return false;
+    	}
     }
+    	
 
     public int hashCode() {
         // If you want to use TupleDesc as keys for HashMap, implement this so
@@ -190,9 +229,13 @@ public class TupleDesc implements Serializable {
      */
     public String toString() {
         // some code goes here
-        return "";
-    }
-    private class TupleDescIterator implements Iterator<TDItem>{
-    	
+        String output=new String();
+        for(int i=0;i!=this.fields.size();i++) {
+        	output+=this.getFieldType(i)+"("+this.getFieldName(i)+")";
+        	if(i!=this.fields.size()-1) {
+        		output+=",";
+        	}
+        }
+        return output;
     }
 }
