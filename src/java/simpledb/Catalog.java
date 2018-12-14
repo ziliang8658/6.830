@@ -22,8 +22,15 @@ public class Catalog {
      * Constructor.
      * Creates a new, empty catalog.
      */
+	
+	private Map<Integer, TableDesc> tableIdMap;
+	private Map<String,TableDesc>tableNameMap;
+	private List<Integer> tableIdList;
     public Catalog() {
         // some code goes here
+    	tableIdMap=new HashMap<Integer,TableDesc>();
+    	tableNameMap=new HashMap<String,TableDesc>();
+    	tableIdList=new ArrayList<Integer>();
     }
 
     /**
@@ -36,7 +43,10 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+    		TableDesc tDesc=new TableDesc(file,name,pkeyField);
+    		tableIdMap.put(file.getId(), tDesc);
+    		tableNameMap.put(name, tDesc);
+    		tableIdList.add(file.getId());
     }
 
     public void addTable(DbFile file, String name) {
@@ -60,7 +70,11 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
-        return 0;
+    	TableDesc tableDesc=tableNameMap.get(name);
+    	if(tableDesc==null) {
+    		throw new NoSuchElementException("Cannot find the table with name "+name);
+    	}
+        return tableDesc.TableId;
     }
 
     /**
@@ -70,8 +84,13 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        TableDesc tableDesc=tableIdMap.get(tableid);
+        if(tableDesc==null){
+        	throw new NoSuchElementException("Cannot find the table with id "+tableid);
+        }
+        TupleDesc tupleDesc= tableDesc.file.getTupleDesc();
+        return tupleDesc;
+        
     }
 
     /**
@@ -81,28 +100,42 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+    	  TableDesc tableDesc=tableIdMap.get(tableid);
+          if(tableDesc==null){
+          	throw new NoSuchElementException("Cannot find the table with id "+tableid);
+          }
+          DbFile dbFile= tableDesc.file;
+          return dbFile;
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+    	TableDesc tableDesc=tableIdMap.get(tableid);
+        if(tableDesc==null){
+        	throw new NoSuchElementException("Cannot find the table with id "+tableid);
+        }
+        String primaryKeyName= tableDesc.pkeyField;
+        return primaryKeyName;
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+    	return 	tableIdList.iterator();
+    	
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+    	TableDesc tableDesc=tableIdMap.get(id);
+        if(tableDesc==null){
+        	throw new NoSuchElementException("Cannot find the table with id "+id);
+        }
+      return tableDesc.name;
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
         // some code goes here
+    	tableIdList.clear();
+    	tableIdMap.clear();
+    	tableNameMap.clear();
     }
     
     /**
@@ -158,6 +191,20 @@ public class Catalog {
             System.out.println ("Invalid catalog entry : " + line);
             System.exit(0);
         }
+    }
+    private static  class TableDesc{
+    	//The file contains the content of the table
+    	int  TableId;
+    	DbFile file;
+    	String name;
+    	//The Id of Primary Key
+    	String pkeyField;
+    	public TableDesc(DbFile file,String name,String pkeyFiledId) {
+    		TableId=file.getId();
+    		this.file=file;
+    		this.name=name;
+    		this.pkeyField=pkeyFiledId;
+    	}
     }
 }
 

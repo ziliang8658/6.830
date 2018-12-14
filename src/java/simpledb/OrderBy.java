@@ -15,6 +15,7 @@ public class OrderBy extends Operator {
     private String orderByFieldName;
     private Iterator<Tuple> it;
     private boolean asc;
+   
 
     /**
      * Creates a new OrderBy node over the tuples from the iterator.
