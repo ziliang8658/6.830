@@ -15,6 +15,7 @@ import simpledb.TestUtil.SkeletonFile;
 import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.systemtest.SystemTestUtil;
 
+
 public class CatalogTest extends SimpleDbTestBase {
 	private static Random r = new Random();
     private static String name = SystemTestUtil.getUUID();

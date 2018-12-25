@@ -67,7 +67,8 @@ public class HeapPage implements Page {
     */
     private int getNumTuples() {        
         // some code goes here
-        return 0;
+    	int tupleSize=td.getSize();
+    	return ((BufferPool.getPageSize()*8)/(tupleSize*8+1));
 
     }
 
@@ -76,9 +77,8 @@ public class HeapPage implements Page {
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {        
-        
-        // some code goes here
-        return 0;
+    	double result=(double)numSlots/8;
+    	return (int)Math.ceil(result);
                  
     }
     
@@ -111,8 +111,8 @@ public class HeapPage implements Page {
      * @return the PageId associated with this page.
      */
     public HeapPageId getId() {
-    // some code goes here
-    throw new UnsupportedOperationException("implement this");
+    
+    	return pid;
     }
 
     /**
@@ -281,16 +281,15 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        // some code goes here
-        return 0;
+        return numSlots;
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        // some code goes here
-        return false;
+    	assert(i<=numSlots);
+    	return (((header[i/8])>>(i%8))&1)==1;
     }
 
     /**
@@ -307,7 +306,20 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        return null;
+        return new TupleIterator<Tuple>;
+    }
+    private class TupleIterator<simpledb.Tuple> implements Iterator<simpledb.Tuple>{
+    	int tupleCursor;
+    	public TupleIterator(){
+    		tupleCursor=0;
+    	}
+    	public boolean hasNext() {
+    		return tupleCursor<numSlots;
+    	}
+    	public Tuple next() {
+    		return tuples[tupleCursor++];
+    	}
+    
     }
 
 }
