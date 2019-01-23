@@ -30,7 +30,7 @@ public class HeapFileReadTest extends SimpleDbTestBase {
     public void tearDown() throws Exception {
         Database.getBufferPool().transactionComplete(tid);
     }
-
+    
     /**
      * Unit test for HeapFile.getId()
      */
@@ -69,7 +69,7 @@ public class HeapFileReadTest extends SimpleDbTestBase {
     public void readPage() throws Exception {
         HeapPageId pid = new HeapPageId(hf.getId(), 0);
         HeapPage page = (HeapPage) hf.readPage(pid);
-
+        
         // NOTE(ghuo): we try not to dig too deeply into the Page API here; we
         // rely on HeapPageTest for that. perform some basic checks.
         assertEquals(484, page.getNumEmptySlots());
@@ -79,9 +79,8 @@ public class HeapFileReadTest extends SimpleDbTestBase {
 
     @Test
     public void testIteratorBasic() throws Exception {
-        HeapFile smallFile = SystemTestUtil.createRandomHeapFile(2, 3, null,
+        HeapFile smallFile = SystemTestUtil.createRandomHeapFile(4, 2000, null,
                 null);
-
         DbFileIterator it = smallFile.iterator(tid);
         // Not open yet
         assertFalse(it.hasNext());
@@ -90,14 +89,13 @@ public class HeapFileReadTest extends SimpleDbTestBase {
             fail("expected exception");
         } catch (NoSuchElementException e) {
         }
-
         it.open();
         int count = 0;
         while (it.hasNext()) {
             assertNotNull(it.next());
             count += 1;
         }
-        assertEquals(3, count);
+        assertEquals(2000, count);
         it.close();
     }
 
@@ -105,7 +103,7 @@ public class HeapFileReadTest extends SimpleDbTestBase {
     public void testIteratorClose() throws Exception {
         // make more than 1 page. Previous closed iterator would start fetching
         // from page 1.
-        HeapFile twoPageFile = SystemTestUtil.createRandomHeapFile(2, 520,
+        HeapFile twoPageFile = SystemTestUtil.createRandomHeapFile(4, 600,
                 null, null);
 
         DbFileIterator it = twoPageFile.iterator(tid);

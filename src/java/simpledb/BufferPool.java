@@ -1,10 +1,12 @@
 package simpledb;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -31,21 +33,17 @@ public class BufferPool {
     public static final int DEFAULT_PAGES = 50;
     public Map<PageId,Page> pagesPool;
     private int numPages;
-    private DbFile dbFile;
      /*
      * Creates a BufferPool that caches up to numPages pages.
      *
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-    	
-    }
-    public BufferPool(int numPages,DbFile dbFile) {
-    	
-    	this.dbFile=dbFile;
     	this.numPages=numPages;
+    	this.pagesPool=new HashMap<PageId,Page>();
+    	
     }
-    
+
     public static int getPageSize() {
       return pageSize;
     }
@@ -77,19 +75,18 @@ public class BufferPool {
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-    	Page page=dbFile.readPage(pid);
-    	ReadWriteLock rwlock = new ReentrantReadWriteLock();
-    	
     	if(pagesPool.containsKey(pid)) {
-    		return pagesPool.get(pid);
+    			return pagesPool.get(pid);
     	}
     	else {
-    		if(pagesPool.size()>this.numPages) {
-    			throw new DbException("The number of pages of the Buffer pool is over the limit");
-    		}else {
-    			pagesPool.put(pid,page);
-    			return page;
-    		}
+    			DbFile file=Database.getCatalog().getDatabaseFile(pid.getTableId());
+    			Page page=file.readPage(pid);
+    			if(pagesPool.size()==this.numPages) {
+    				throw new DbException("The number of pages of the Buffer pool is over the limit");
+    			}else {
+    				pagesPool.put(pid,page);
+    				return page;
+    			}
     	}
     }
         

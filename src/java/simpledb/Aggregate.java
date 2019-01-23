@@ -8,7 +8,6 @@ import java.util.*;
  * single column.
  */
 public class Aggregate extends Operator {
-
     private static final long serialVersionUID = 1L;
     /**
      * Constructor.
@@ -41,7 +40,6 @@ public class Aggregate extends Operator {
 	// some code goes here
 	return -1;
     }
-
     /**
      * @return If this aggregate is accompanied by a group by, return the name
      *         of the groupby field in the <b>OUTPUT</b> tuples. If not, return

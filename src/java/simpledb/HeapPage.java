@@ -18,7 +18,6 @@ public class HeapPage implements Page {
     final byte header[];
     final Tuple tuples[];
     final int numSlots;
-
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
 
@@ -38,17 +37,23 @@ public class HeapPage implements Page {
      * @see Catalog#getTupleDesc
      * @see BufferPool#getPageSize()
      */
-    public HeapPage(HeapPageId id, byte[] data) throws IOException {
+    public HeapPage(HeapPageId id, byte[] data) throws IOException  {
         this.pid = id;
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
         this.numSlots = getNumTuples();
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
-
+        
         // allocate and read the header slots of this page
         header = new byte[getHeaderSize()];
-        for (int i=0; i<header.length; i++)
-            header[i] = dis.readByte();
-        
+        try {
+        	for (int i=0; i<header.length; i++)
+        		header[i] = dis.readByte();
+        		dis.close();
+        }
+        catch(IOException e) {
+        	e.printStackTrace();
+        	
+        }
         tuples = new Tuple[numSlots];
         try{
             // allocate and read the actual records of this page
@@ -57,8 +62,8 @@ public class HeapPage implements Page {
         }catch(NoSuchElementException e){
             e.printStackTrace();
         }
-        dis.close();
-
+        
+        
         setBeforeImage();
     }
 
@@ -68,8 +73,8 @@ public class HeapPage implements Page {
     private int getNumTuples() {        
         // some code goes here
     	int tupleSize=td.getSize();
-    	return ((BufferPool.getPageSize()*8)/(tupleSize*8+1));
-
+    	return (int)Math.floor(BufferPool.getPageSize()*8/((double)tupleSize*8+1));
+    	
     }
 
     /**
@@ -196,7 +201,6 @@ public class HeapPage implements Page {
                 Field f = tuples[i].getField(j);
                 try {
                     f.serialize(dos);
-                
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -281,9 +285,14 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        return numSlots;
+        int emptySlots=0;
+        for(int i=0;i!=numSlots;i++) {
+        	if(!isSlotUsed(i)) {
+        		emptySlots++;
+        	}
+        }
+        return emptySlots;
     }
-
     /**
      * Returns true if associated slot on this page is filled.
      */
@@ -306,20 +315,27 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        return new TupleIterator<Tuple>;
+        return new TupleIterator();
     }
-    private class TupleIterator<simpledb.Tuple> implements Iterator<simpledb.Tuple>{
+    private class TupleIterator<Tuple> implements Iterator<Object>{
     	int tupleCursor;
     	public TupleIterator(){
     		tupleCursor=0;
     	}
     	public boolean hasNext() {
-    		return tupleCursor<numSlots;
+    		while(tupleCursor<numSlots&&tuples[tupleCursor]==null) {
+    			tupleCursor++;
+    		}
+    		if(tupleCursor==numSlots) {
+    			return false;
+    		}
+    		return true;
+    		
     	}
-    	public Tuple next() {
+    	public Object next() {
     		return tuples[tupleCursor++];
     	}
-    
+
     }
 
 }

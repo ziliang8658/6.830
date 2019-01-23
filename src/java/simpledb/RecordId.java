@@ -52,7 +52,7 @@ public class RecordId implements Serializable {
     public boolean equals(Object o) {
     	if(o instanceof RecordId) {
     		RecordId comparedRecordId=(RecordId)o;
-    		return (comparedRecordId.getPageId()==this.pageId&&comparedRecordId.getTupleNumber()==this.tupleNumber);
+    		return (comparedRecordId.getPageId().equals(this.pageId)&&comparedRecordId.getTupleNumber()==this.tupleNumber);
     	}
     	return false;
     }
