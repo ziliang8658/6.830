@@ -31,7 +31,6 @@ public class HeapFile implements DbFile {
 		this.storedFile = f;
 		this.tableId = getId();
 		try {
-			System.out.println("The file name is"+f.getName());
 			this.BufferedinputStream= new BufferedInputStream(new FileInputStream(storedFile));
 			this.tupleDesc = td;
 		} catch (FileNotFoundException e) {
@@ -81,7 +80,6 @@ public class HeapFile implements DbFile {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (IndexOutOfBoundsException e) {
-			System.out.println("The page number is" + pageNumber);
 		}
 
 		try {
@@ -146,7 +144,7 @@ public class HeapFile implements DbFile {
 		public void open() throws DbException, TransactionAbortedException {
 			PageId currentPageId = new HeapPageId(tableId, 0);
 			currentPage = Database.getBufferPool().getPage(tid, currentPageId, Permissions.READ_ONLY);
-			rewind();
+			tupleIterator = ((HeapPage) currentPage).iterator();
 		}
 
 		@Override
@@ -155,18 +153,13 @@ public class HeapFile implements DbFile {
 				return false;
 			}
 			if (tupleIterator.hasNext()) {
-				System.out.println("Current page Index is a "+currentPageIndex);
 				return true;
 			}
-			System.out.println("Current num Page is "+numPages());
 		   if (currentPageIndex < numPages()-1) {
 			   	currentPageIndex++;
 				PageId currentPageId = new HeapPageId(tableId, currentPageIndex);
 				currentPage = Database.getBufferPool().getPage(tid, currentPageId, Permissions.READ_WRITE);
-				if(currentPageIndex==1) {
-					System.out.println(currentPage);
-				}
-				rewind();
+				tupleIterator = ((HeapPage) currentPage).iterator();
 				return tupleIterator.hasNext();
 			}
 		   else {
@@ -182,15 +175,14 @@ public class HeapFile implements DbFile {
 				throw new NoSuchElementException();
 			}
 			Object nextElement = tupleIterator.next();
-			if (nextElement == null) {
-				System.out.println("enter into");
-			}
 			return (Tuple) nextElement;
 
 		}
 
 		@Override
 		public void rewind() throws DbException, TransactionAbortedException {
+			PageId currentPageId = new HeapPageId(tableId, 0);
+			currentPage = Database.getBufferPool().getPage(tid, currentPageId, Permissions.READ_ONLY);
 			tupleIterator = ((HeapPage) currentPage).iterator();
 		}
 		@Override

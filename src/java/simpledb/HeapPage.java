@@ -52,13 +52,14 @@ public class HeapPage implements Page {
         }
         catch(IOException e) {
         	e.printStackTrace();
-        	
+     
         }
         tuples = new Tuple[numSlots];
         try{
             // allocate and read the actual records of this page
-            for (int i=0; i<tuples.length; i++)
+            for (int i=0; i<tuples.length; i++) {
                 tuples[i] = readNextTuple(dis,i);
+            }
         }catch(NoSuchElementException e){
             e.printStackTrace();
         }

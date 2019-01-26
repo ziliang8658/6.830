@@ -44,6 +44,9 @@ public class Tuple implements Serializable {
         return tupleDesc;
         
     }
+    public int getFieldsSize() {
+    	return fields.size();
+    }
 
     /**
      * @return The RecordId representing the location of this tuple on disk. May
@@ -99,7 +102,7 @@ public class Tuple implements Serializable {
     public String toString() {
     	StringBuilder sb=new StringBuilder();
     	for(int i=0;i!=fields.size();i++) {
-    		sb.append(fields.get(i));
+    		sb.append(fields.get(i)+"\t");
     	}
     	return sb.toString();
     }

@@ -1,11 +1,20 @@
 package simpledb;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
 /**
  * Knows how to compute some aggregate over a set of IntFields.
  */
 public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+    int gbfield;
+    Type gbfieldtype;
+    int afield;
+    Op what;
+    Map<Integer,Integer> groupByMap;
 
     /**
      * Aggregate constructor
@@ -23,7 +32,14 @@ public class IntegerAggregator implements Aggregator {
      */
 
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        // some code goes here
+        this.gbfield=gbfield;
+        this.gbfieldtype=gbfieldtype;
+        this.afield=afield;
+        this.what=what;
+        if(gbfieldtype==Type.INT_TYPE) {
+        groupByMap=new TreeMap<Integer,Integer>();
+        }
+        
     }
 
     /**
@@ -34,7 +50,7 @@ public class IntegerAggregator implements Aggregator {
      *            the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
-        // some code goes here
+        
     }
 
     /**
@@ -49,6 +65,50 @@ public class IntegerAggregator implements Aggregator {
         // some code goes here
         throw new
         UnsupportedOperationException("please implement me for lab2");
+    }
+    
+    
+    private class aggregateIterator implements OpIterator{
+    	Iterator<Map.>
+    	public aggregateIterator() {
+    		
+    	}
+		@Override
+		public void open() throws DbException, TransactionAbortedException {
+			
+			
+		}
+
+		@Override
+		public boolean hasNext() throws DbException, TransactionAbortedException {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void rewind() throws DbException, TransactionAbortedException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public TupleDesc getTupleDesc() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void close() {
+			// TODO Auto-generated method stub
+			
+		}
+    	
     }
 
 }
