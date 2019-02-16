@@ -42,7 +42,10 @@ public class StringField implements Field {
 	}
 
 	public boolean equals(Object field) {
-		return ((StringField) field).value.equals(value);
+		if(field instanceof StringField) {
+			return ((StringField) field).value.equals(value);
+		}
+		return false;
 	}
 
 	/**
@@ -111,5 +114,11 @@ public class StringField implements Field {
 	public Type getType() {
 
 		return Type.STRING_TYPE;
+	}
+	
+	public int compareTo(Field other) {
+		String comparedValue= ((StringField)other).getValue();
+		return this.getValue().compareTo(comparedValue);
+		
 	}
 }

@@ -1,8 +1,11 @@
 package simpledb;
-
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.TreeMap;
+import java.lang.Integer;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
@@ -10,12 +13,14 @@ import java.util.NoSuchElementException;
 public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+    private static final short ValueIndex=0;
+    private static final short CountIndex=1;
     int gbfield;
     Type gbfieldtype;
     int afield;
     Op what;
-    Map<Integer,Integer> groupByMap;
-
+    Map<Field,int[]> groupByMap;
+    
     /**
      * Aggregate constructor
      * 
@@ -36,10 +41,9 @@ public class IntegerAggregator implements Aggregator {
         this.gbfieldtype=gbfieldtype;
         this.afield=afield;
         this.what=what;
-        if(gbfieldtype==Type.INT_TYPE) {
-        groupByMap=new TreeMap<Integer,Integer>();
-        }
-        
+        groupByMap=new TreeMap<Field,int[]>();
+      
+
     }
 
     /**
@@ -50,8 +54,26 @@ public class IntegerAggregator implements Aggregator {
      *            the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
-        
+    	
+        switch(what) {
+        case MIN:
+        	aggregateMin(tup);
+        	break;
+        case MAX:
+        	aggregateMax(tup);
+        	break;
+        case AVG:
+        	aggregateAvg(tup);
+        	break;
+        case SUM:
+        	aggregateSum(tup);
+        	break;
+        case COUNT:
+        	aggregateCount(tup);
+        	break;
+        }
     }
+    
 
     /**
      * Create a OpIterator over group aggregate results.
@@ -62,53 +84,188 @@ public class IntegerAggregator implements Aggregator {
      *         the constructor.
      */
     public OpIterator iterator() {
-        // some code goes here
-        throw new
-        UnsupportedOperationException("please implement me for lab2");
+    	return new aggregateIterator();
     }
     
     
+
+    
     private class aggregateIterator implements OpIterator{
-    	Iterator<Map.>
+    	Iterator<Entry<Field,int[]>> aggregateTupleIterator;
+    	TupleDesc aggregateTupleDesc;
     	public aggregateIterator() {
+    		aggregateTupleIterator=null;
+    		Type[] aggregateTypes=new Type[]{gbfieldtype,Type.INT_TYPE};
+			String[] aggregateFieldNames=new String[] {"groupVal","aggregateVal"};
+			aggregateTupleDesc=new TupleDesc(aggregateTypes,aggregateFieldNames);
     		
     	}
 		@Override
 		public void open() throws DbException, TransactionAbortedException {
 			
-			
+			aggregateTupleIterator=groupByMap.entrySet().iterator();
 		}
 
 		@Override
 		public boolean hasNext() throws DbException, TransactionAbortedException {
-			// TODO Auto-generated method stub
-			return false;
+			
+			if(aggregateTupleIterator==null) {
+				return false;
+			}
+			return aggregateTupleIterator.hasNext();
 		}
 
 		@Override
 		public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
-			// TODO Auto-generated method stub
-			return null;
+			Entry<Field,int[]> entry=aggregateTupleIterator.next();
+			Tuple nextTuple=new Tuple(aggregateTupleDesc);
+			nextTuple.setField(0, entry.getKey());
+			Field valueField=new IntField(entry.getValue()[ValueIndex]);
+			nextTuple.setField(1,valueField);
+			return nextTuple;
+			
 		}
 
 		@Override
 		public void rewind() throws DbException, TransactionAbortedException {
-			// TODO Auto-generated method stub
+			aggregateTupleIterator=groupByMap.entrySet().iterator();
 			
 		}
 
 		@Override
 		public TupleDesc getTupleDesc() {
-			// TODO Auto-generated method stub
-			return null;
+			return aggregateTupleDesc;
 		}
 
 		@Override
 		public void close() {
-			// TODO Auto-generated method stub
-			
+			aggregateTupleIterator=null;
 		}
     	
     }
+    private void aggregateMin(Tuple tuple) {
+    	Field aField=tuple.getField(afield);
+    	int currentValue=((IntField)aField).getValue();
+    	Field groupField;
+    	if(gbfield==NO_GROUPING) {
+    		groupField=new StringField("NO_GROUPING","NO_GROUPING".length());
+    	}
+    	else {
+    		groupField=tuple.getField(gbfield);
+    	}
+    	if(aField instanceof IntField) {
+    		int[] lastminValueArray=groupByMap.get(groupField);
+    		
+    		if(lastminValueArray==null||lastminValueArray[0]>currentValue) {
+    			int[] currentValueArray=new int[] {currentValue,1};
+    			groupByMap.put(groupField,currentValueArray);
+    		}
+    	
+    	}
+   }
+
+ 
+    private void aggregateMax(Tuple tuple) {
+    	
+    	Field aField=tuple.getField(afield);
+    	int currentValue=((IntField)aField).getValue();
+     	Field groupField;
+    	if(gbfield==NO_GROUPING) {
+    		groupField=new StringField("NO_GROUPING","NO_GROUPING".length());
+    	}
+    	else {
+    		groupField=tuple.getField(gbfield);
+    	}
+    	if(aField instanceof IntField) {
+    		int[] lastmaxValueArray=groupByMap.get(groupField);
+    		
+    		if(lastmaxValueArray==null||lastmaxValueArray[0]<currentValue) {
+    			int[] currentValueArray=new int[] {currentValue,1};
+    			groupByMap.put(groupField,currentValueArray);
+    		}
+    	
+    	}
+    	
+    }
+    private void aggregateAvg(Tuple tuple) {
+    	Field aField=tuple.getField(afield);
+    	int currentValue=((IntField)aField).getValue();
+    	Field groupField;
+    	if(gbfield==NO_GROUPING) {
+    		groupField=new StringField("NO_GROUPING","NO_GROUPING".length());
+    	}
+    	else {
+    		groupField=tuple.getField(gbfield);
+    	}
+    	if(aField instanceof IntField) {
+    		int[] lastAvgValueArray=groupByMap.get(groupField);
+    		int[] currentAvgValueArray;
+    		if(lastAvgValueArray==null) {
+    			currentAvgValueArray=new int[] {currentValue,1};
+    		}
+    		else {
+    			int currentAvgValue=(lastAvgValueArray[0]*lastAvgValueArray[1]+currentValue)/(lastAvgValueArray[1]+1);
+    			currentAvgValueArray=new int[] {currentAvgValue,lastAvgValueArray[1]+1};
+    		}
+    		groupByMap.put(groupField,currentAvgValueArray );
+    		
+    	
+    	}
+    	
+    }
+    
+    
+    private void aggregateSum(Tuple tuple) {
+
+    	Field aField=tuple.getField(afield);
+    	int currentValue=((IntField)aField).getValue();
+    	Field groupField;
+    	if(gbfield==NO_GROUPING) {
+    		groupField=new StringField("NO_GROUPING","NO_GROUPING".length());
+    	}
+    	else {
+    		groupField=tuple.getField(gbfield);
+    	}
+    	if(aField instanceof IntField) {
+    		int[] lastSumValueArray=groupByMap.get(groupField);
+    		int[] currentSumValueArray;
+    		if(lastSumValueArray==null) {
+    			currentSumValueArray=new int[] {currentValue,1};
+    		}
+    		else {
+    			int currentSumValue=lastSumValueArray[0]+currentValue;
+    			currentSumValueArray=new int[] {currentSumValue,lastSumValueArray[1]+1};
+    		}
+    		groupByMap.put(groupField,currentSumValueArray);
+    		
+    	
+    	}
+    	
+    }
+    private void aggregateCount(Tuple tuple) {
+    	Field aField=tuple.getField(afield);
+    	Field groupField;
+    	if(gbfield==NO_GROUPING) {
+    		groupField=new StringField("NO_GROUPING","NO_GROUPING".length());
+    	}
+    	else {
+    		groupField=tuple.getField(gbfield);
+    	}
+    	if(aField instanceof IntField) {
+    		int[] lastCountValueArray=groupByMap.get(groupField);
+    		int[] currentCountValueArray;
+    		if(lastCountValueArray==null) {
+    			currentCountValueArray=new int[] {1,0};
+    		}
+    		else {
+    			int currentCountValue=lastCountValueArray[0]+1;
+    			currentCountValueArray=new int[] {currentCountValue,0};
+    		}
+    		groupByMap.put(groupField,currentCountValueArray);
+    	
+    	}
+    	
+    }
+    
 
 }

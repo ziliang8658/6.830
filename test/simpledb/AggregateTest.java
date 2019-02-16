@@ -101,7 +101,9 @@ public class AggregateTest extends SimpleDbTestBase {
         Aggregator.Op.MIN);
     op.open();
     while (op.hasNext()) {
-      assertNotNull(op.next());
+      Tuple next=op.next();
+      System.out.println(next);
+      assertNotNull(next);
     }
     assertTrue(TestUtil.checkExhausted(op));
 

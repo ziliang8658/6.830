@@ -14,7 +14,7 @@ public class IntField implements Field {
     public int getValue() {
         return value;
     }
-
+    
     /**
      * Constructor.
      *
@@ -33,7 +33,10 @@ public class IntField implements Field {
     }
 
     public boolean equals(Object field) {
-        return ((IntField) field).value == value;
+    	if(field instanceof IntField) {
+    		return ((IntField) field).value == value;
+    	}
+    	return false;
     }
 
     public void serialize(DataOutputStream dos) throws IOException {
@@ -82,5 +85,18 @@ public class IntField implements Field {
      */
 	public Type getType() {
 		return Type.INT_TYPE;
+	}
+	public int compareTo(Field other) {
+		int comparedValue= ((IntField)other).getValue();
+		if(getValue()>comparedValue) {
+			return 1;
+		}
+		if(getValue()<comparedValue) {
+			return -1;
+		}
+		else {
+			return 0;
+		}
+		
 	}
 }

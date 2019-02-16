@@ -10,10 +10,15 @@ import java.util.*;
 public class Aggregate extends Operator {
 	private static final long serialVersionUID = 1L;
 	OpIterator child;
+	OpIterator[] children;
 	int afield;
 	int gfield;
 	Aggregator.Op aop;
-
+	TupleDesc aggreateTupleDesc;
+	Aggregator aggregator;
+	OpIterator aggregatorIterator;
+	
+	
 	/**
 	 * Constructor.
 	 * 
@@ -33,6 +38,9 @@ public class Aggregate extends Operator {
 		this.afield = afield;
 		this.gfield = gfield;
 		this.aop = aop;
+		this.children=new OpIterator[] {child};
+	
+		
 	}
 
 	/**
@@ -80,6 +88,21 @@ public class Aggregate extends Operator {
 	public void open() throws NoSuchElementException, DbException, TransactionAbortedException {
 		super.open();
 		child.open();
+		Type groupbyFieldType=child.getTupleDesc().getFieldType(gfield);
+		Type aggregateFieldType=child.getTupleDesc().getFieldType(afield);
+		if(aggregateFieldType==Type.INT_TYPE) {
+			 aggregator=new IntegerAggregator(gfield,groupbyFieldType,afield,aop);
+		}else {
+			 aggregator=new StringAggregator(gfield,groupbyFieldType,afield,aop);
+		}
+		while(child.hasNext()) {
+			Tuple tup=child.next();
+			Type aggregateField=tup.getField(afield).getType();
+			aggregator.mergeTupleIntoGroup(tup);
+			
+		}
+		aggregatorIterator=aggregator.iterator();
+		aggregatorIterator.open();
 	}
 
 	/**
@@ -90,11 +113,31 @@ public class Aggregate extends Operator {
 	 * return null if there are no more tuples.
 	 */
 	protected Tuple fetchNext() throws TransactionAbortedException, DbException {
+		if(aggregatorIterator.hasNext()) {
+			Tuple tup= aggregatorIterator.next();
+			/*We need to converted the tuple fetched from the aggregator, modified its filed names and return the new tuple*/
+			Tuple convertedTuple=new Tuple(getTupleDesc());
+			Field aggregateField;
+			aggregateField=tup.getField(1);
+			if(gfield==Aggregator.NO_GROUPING) {
+				convertedTuple.setField(0, aggregateField);
+			}
+			else {
+				Field groupByField=tup.getField(0);
+				convertedTuple.setField(0, groupByField);
+				convertedTuple.setField(1, aggregateField);
+			}
+			return convertedTuple;
+			
+		}
+		return null;
+		
 		
 	}
 
 	public void rewind() throws DbException, TransactionAbortedException {
-		// some code goes here
+		 child.rewind();
+		 aggregatorIterator.rewind();
 	}
 
 	/**
@@ -108,23 +151,42 @@ public class Aggregate extends Operator {
 	 * in the constructor, and child_td is the TupleDesc of the child iterator.
 	 */
 	public TupleDesc getTupleDesc() {
-		// some code goes here
-		return null;
+		if(aggreateTupleDesc!=null) {
+			return aggreateTupleDesc;
+		}
+		
+		Type groupbyFieldType=child.getTupleDesc().getFieldType(gfield);
+		String groupbyName =child.getTupleDesc().getFieldName(gfield);
+		String aggregateFieldname=child.getTupleDesc().getFieldName(afield);
+		String aggregateColumnName=aop.toString()+"("+aggregateFieldname+")";
+		Type[] aggregateTypes;
+		String[] aggregateFieldNames;
+		if(gfield==Aggregator.NO_GROUPING) {
+			aggregateTypes=new Type[]{Type.INT_TYPE};
+			aggregateFieldNames=new String[]{aggregateColumnName};
+		}
+		else {
+			aggregateTypes=new Type[]{groupbyFieldType,Type.INT_TYPE};
+			aggregateFieldNames=new String[] {groupbyName,aggregateColumnName};
+		}
+		aggreateTupleDesc= new TupleDesc(aggregateTypes,aggregateFieldNames);
+		return aggreateTupleDesc;
 	}
 
 	public void close() {
-		// some code goes here
+		child.close();
+		aggregatorIterator.close();
+		
 	}
 
 	@Override
 	public OpIterator[] getChildren() {
-		// some code goes here
-		return null;
+		return children;
 	}
 
 	@Override
 	public void setChildren(OpIterator[] children) {
-		// some code goes here
+		this.children=children;
 	}
 
 }
