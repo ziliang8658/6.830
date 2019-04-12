@@ -76,7 +76,7 @@ public class Utility {
             tup.setField(i, new IntField(n));
         return tup;
     }
-
+    
     /**
      * @return a Tuple with a 'width' IntFields with the value tupledata[i]
      *         in each field.

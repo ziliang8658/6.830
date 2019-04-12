@@ -23,6 +23,7 @@ public class HeapPage implements Page {
     private TransactionId madeDirtyTrans;
     private boolean dirty;
 
+
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
      * The format of a HeapPage is a set of header bytes indicating
@@ -39,7 +40,7 @@ public class HeapPage implements Page {
      * @see Catalog#getTupleDesc
      * @see BufferPool#getPageSize()
      */
-    public HeapPage(HeapPageId id, byte[] data) throws IOException  {
+    public  HeapPage(HeapPageId id, byte[] data) throws IOException  {
         this.pid = id;
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
         this.numSlots = getNumTuples();
@@ -65,6 +66,7 @@ public class HeapPage implements Page {
         }catch(NoSuchElementException e){
             e.printStackTrace();
         }
+     
         
         
         setBeforeImage();
@@ -352,7 +354,7 @@ public class HeapPage implements Page {
     		tupleCursor=0;
     	}
     	public boolean hasNext() {
-    		while(tupleCursor<numSlots&&tuples[tupleCursor]==null) {
+    		while(tupleCursor<numSlots&&!isSlotUsed(tupleCursor)) {
     			tupleCursor++;
     		}
     		if(tupleCursor==numSlots) {

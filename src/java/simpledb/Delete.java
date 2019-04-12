@@ -9,7 +9,10 @@ import java.io.IOException;
 public class Delete extends Operator {
 
     private static final long serialVersionUID = 1L;
-
+    private  OpIterator[] children;
+    private final TransactionId tid;
+    private final TupleDesc resultCountTupleDesc;
+    private boolean alreadyDeleted;
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -20,24 +23,30 @@ public class Delete extends Operator {
      *            The child operator from which to read tuples for deletion
      */
     public Delete(TransactionId t, OpIterator child) {
-        // some code goes here
+    	this.tid=t;
+    	this.children= new OpIterator[] {child};
+    	Type[] resultCountTupleType=new Type[] {Type.INT_TYPE};
+    	String [] resultCountTupleName=new String[] {"Affected tuples Count"};
+    	resultCountTupleDesc=new TupleDesc(resultCountTupleType,resultCountTupleName);
+    	alreadyDeleted=false;
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return resultCountTupleDesc;
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
+    	super.open();
+        children[0].open();
     }
 
     public void close() {
-        // some code goes here
+    	super.close();
+    	children[0].close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+    	children[0].rewind();
     }
 
     /**
@@ -50,19 +59,35 @@ public class Delete extends Operator {
      * @see BufferPool#deleteTuple
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+    	Tuple resultTuple=new Tuple(resultCountTupleDesc);
+    	if (alreadyDeleted) {
+    		return null;
+    	}
+    	int count=0;
+    	try {
+    		while(children[0].hasNext()) {
+    			Database.getBufferPool().deleteTuple(tid, children[0].next());
+    			count++;
+    		}
+    		Field resultCountFiled=new IntField(count);
+    		resultTuple.setField(0, resultCountFiled);
+    		
+    	}
+    	catch(IOException e) {
+    		e.printStackTrace();
+    	}
+    	alreadyDeleted=true;
+    	return resultTuple;
     }
 
     @Override
     public OpIterator[] getChildren() {
-        // some code goes here
-        return null;
+    	 return children;
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-        // some code goes here
+    	 this.children=children;
     }
 
 }

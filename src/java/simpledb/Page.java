@@ -11,7 +11,7 @@ package simpledb;
  *     Page(PageId id, byte[] data)
  */
 public interface Page {
-
+	
     /**
      * Return the id of this page.  The id is a unique identifier for a page
      * that can be used to look up the page on disk or determine if the page
@@ -56,4 +56,6 @@ public interface Page {
      * copy current content to the before image.
      */
     public void setBeforeImage();
+    public Page pre=null;
+    public Page next=null;
 }

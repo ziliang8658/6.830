@@ -15,12 +15,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Sam Madden
  */
 public class HeapFile implements DbFile {
+	private RandomAccessFile randomAccessFile;
 	private File storedFile;
-	private BufferedInputStream BufferedinputStream;
 	private TupleDesc tupleDesc;
 	private Byte[] HeapFileData;
 	private final int tableId;
-
 	/**
 	 * Constructs a heap file backed by the specified file.
 	 * 
@@ -28,12 +27,12 @@ public class HeapFile implements DbFile {
 	 */
 
 	public HeapFile(File f, TupleDesc td) {
-		this.storedFile = f;
+		storedFile=f;
 		this.tableId = getId();
 		try {
-			this.BufferedinputStream= new BufferedInputStream(new FileInputStream(storedFile));
-			this.tupleDesc = td;
-		} catch (FileNotFoundException e) {
+			randomAccessFile = new RandomAccessFile(f,"rw");
+			tupleDesc = td;
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
@@ -77,15 +76,13 @@ public class HeapFile implements DbFile {
 		byte[] data = new byte[BufferPool.getPageSize()];
 		Page page = null;
 		try {
-			BufferedinputStream.read(data,0,BufferPool.getPageSize());
+			randomAccessFile.seek(pageNumber*BufferPool.getPageSize());
+			randomAccessFile.read(data);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		try {
 			page = new HeapPage((HeapPageId) pid, data);
-			if(pid.getPageNumber()==1) {
-				System.out.println(data);
-			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -99,7 +96,6 @@ public class HeapFile implements DbFile {
 		   BufferedOutputStream pageOutputStream=new BufferedOutputStream(new FileOutputStream(storedFile));
 		   int pageSize=BufferPool.getPageSize();
 		   int offSet=page.getId().getPageNumber()*pageSize;
-		   pageOutputStream.write(page.getPageData(),offSet,pageSize);
 		   pageOutputStream.flush();
 	}
 
@@ -107,7 +103,7 @@ public class HeapFile implements DbFile {
 	 * Returns the number of pages in this HeapFile.
 	 */
 	public int numPages() {
-		return (int) Math.ceil((double) storedFile.length() / BufferPool.getPageSize());
+		return (int)storedFile.length() / BufferPool.getPageSize(); 
 	}
 	// see DbFile.java for javadocs
 	public ArrayList<Page> insertTuple(TransactionId tid, Tuple t)
@@ -127,6 +123,8 @@ public class HeapFile implements DbFile {
 			HeapPageId newHeapPageId=new HeapPageId(tableId,numPages());
 			HeapPage newPage=new HeapPage(newHeapPageId,newHeapPageData);
 			newPage.insertTuple(t);
+			randomAccessFile.seek((numPages())*BufferPool.getPageSize());
+			randomAccessFile.write(newPage.getPageData());
 			affectedPages.add(newPage);
 			return affectedPages;
 		}
@@ -187,9 +185,7 @@ public class HeapFile implements DbFile {
 				tupleIterator = ((HeapPage) currentPage).iterator();
 				return tupleIterator.hasNext();
 			}
-		   else {
-			   return false;
-		   }
+		    return false;
 
 		}
 

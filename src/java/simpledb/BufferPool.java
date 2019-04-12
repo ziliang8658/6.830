@@ -3,6 +3,7 @@ package simpledb;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,19 +33,23 @@ public class BufferPool {
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
-    public Map<PageId,Page> pagesPool;
+    private Map<PageId,Page> pagesPool;
     private int numPages;
+    private LinkedList<Page> pageList;
+
      /*
      * Creates a BufferPool that caches up to numPages pages.
      *
      * @param numPages maximum number of pages in this buffer pool.
      */
-    public BufferPool(int numPages) {
+    public BufferPool(int numPages){
     	this.numPages=numPages;
     	this.pagesPool=new HashMap<PageId,Page>();
-    	
+    	byte[] newHeapPageData=HeapPage.createEmptyPageData();
+    	pageList=new LinkedList<Page>();
+		
     }
-
+    
     public static int getPageSize() {
       return pageSize;
     }
@@ -76,19 +81,33 @@ public class BufferPool {
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
+    	Page cachedPage=null;
     	if(pagesPool.containsKey(pid)) {
-    			return pagesPool.get(pid);
+    		cachedPage= pagesPool.get(pid);
+    		pageList.remove(cachedPage);
+    		pageList.addFirst(cachedPage);
     	}
     	else {
     			DbFile file=Database.getCatalog().getDatabaseFile(pid.getTableId());
-    			Page page=file.readPage(pid);
+    			cachedPage=file.readPage(pid);
     			if(pagesPool.size()==this.numPages) {
     				throw new DbException("The number of pages of the Buffer pool is over the limit");
     			}else {
-    				pagesPool.put(pid,page);
-    				return page;
+    				numPages++;
+    				
+    				if(numPages>DEFAULT_PAGES) {
+    					Page lastPage=pageList.getLast();
+    					pageList.removeLast();
+    					pageList.addFirst(cachedPage);
+    					pagesPool.remove(lastPage);
+    				}
+    				pagesPool.put(cachedPage.getId(), cachedPage);
     			}
+ 
     	}
+    	
+    	return cachedPage;
+    	
     }
         
 
@@ -130,6 +149,7 @@ public class BufferPool {
      * @param tid the ID of the transaction requesting the unlock
      * @param commit a flag indicating whether we should commit or abort
      */
+   
     public void transactionComplete(TransactionId tid, boolean commit)
         throws IOException {
         // some code goes here
@@ -156,10 +176,14 @@ public class BufferPool {
         DbFile dbFile=Database.getCatalog().getDatabaseFile(tableId);
         List<Page> affectedPages=dbFile.insertTuple(tid, t);
         for(Page page:affectedPages) {
-        	page.markDirty(true, tid);
+        	page.markDirty(true,tid);
+        	PageId pageId=page.getId();
+        	if(pagesPool.get(pageId)==null) {
+        		pagesPool.put(pageId,page);
+        		numPages++;
+        	}
         }
-        
-        
+
     }
 
     /**
@@ -182,6 +206,7 @@ public class BufferPool {
           List<Page> affectedPages=dbFile.deleteTuple(tid, t);
           for(Page page:affectedPages) {
           	page.markDirty(true, tid);
+          	pagesPool.put(page.getId(),page);
           }
     }
 
@@ -191,8 +216,11 @@ public class BufferPool {
      *     break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        // some code goes here
-        // not necessary for lab1
+        for(Page page:pageList) {
+        	if(page.isDirty()!=null) {
+        		flushPage(page.getId());
+        	}
+        }
 
     }
 
@@ -205,8 +233,12 @@ public class BufferPool {
         are removed from the cache so they can be reused safely
     */
     public synchronized void discardPage(PageId pid) {
-        // some code goes here
-        // not necessary for lab1
+    	/* First we need to locate the page in the Page pool and make sure it is not dirtied*/
+    	Page pageToDelete=pagesPool.get(pid);
+        if(pageToDelete.isDirty()!=null) {
+        	pagesPool.remove(pid);
+        	pageList.remove(pageToDelete);
+        }
     }
 
     /**
@@ -214,8 +246,7 @@ public class BufferPool {
      * @param pid an ID indicating the page to flush
      */
     private synchronized  void flushPage(PageId pid) throws IOException {
-        // some code goes here
-        // not necessary for lab1
+    		
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -233,5 +264,7 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
     }
+    
+ 
 
 }
