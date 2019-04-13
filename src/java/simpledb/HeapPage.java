@@ -114,7 +114,7 @@ public class HeapPage implements Page {
     public void setBeforeImage() {
         synchronized(oldDataLock)
         {
-        oldData = getPageData().clone();
+        	oldData = getPageData().clone();
         }
     }
 
