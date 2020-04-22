@@ -1,15 +1,4 @@
 simple-db
 =========
-
-Code for all 6.830 labs will be available in this repo. Once you have set up your class repo, you pull lab code from here.
-
-Directions for Repo Setup
--------------------------
-
-Directions can be [here](https://github.com/MIT-DB-Class/course-info-2018)
-
-Lab Submission
------
-
-Instructions for labs (including how to submit answers) are [here](https://github.com/MIT-DB-Class/course-info-2018)
+This is the code repository for a simplified database management system, which includes basic functionalities such as command parsing, storage management, trasaction management, and so forth. This is not an dead project, I will continuously update it. And hopefully it will finally be a distributed strong consistency cloud database, like TiDB or CockroachDB, although it is unlikey in the lifetiem to implement such a complex system, I will still move forward to that direction
 
